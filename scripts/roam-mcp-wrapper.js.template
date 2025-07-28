@@ -1,0 +1,64 @@
+#!/usr/bin/env node
+
+// 環境変数を設定
+process.env.ROAM_API_TOKEN = "roam-graph-token-あなたのトークン";
+process.env.ROAM_GRAPH_NAME = "あなたのグラフ名";
+// LLMのメモ用に、Roam Researchの新しいページLLM/Memoriesを作成してください
+process.env.MEMORIES_TAG = "#[[LLM/Memories]]";
+
+// 標準出力フィルタリング設定
+const originalStdoutWrite = process.stdout.write;
+const originalConsoleLog = console.log;
+const originalConsoleInfo = console.info;
+
+// 標準出力のwrite関数をオーバーライド
+process.stdout.write = function(chunk, encoding, callback) {
+  const message = chunk.toString();
+  
+  // RoamServerのデバッグメッセージをフィルタリング
+  if (message.includes('RoamServer:') || 
+      message.includes('Constructor') || 
+      message.includes('run() method') ||
+      message.includes('Attempting to create') ||
+      message.includes('setup complete') ||
+      message.includes('connected') ||
+      message.includes('stdioMcpServer') ||
+      message.includes('httpMcpServer') ||
+      message.includes('Transport')) {
+    // デバッグメッセージは標準エラーに出力（無音化する場合はコメントアウト）
+    // process.stderr.write(chunk, encoding, callback);
+    if (callback) callback();
+    return true;
+  }
+  
+  // JSON-RPCメッセージのみ標準出力に送信
+  return originalStdoutWrite.call(this, chunk, encoding, callback);
+};
+
+// console.log もオーバーライド
+console.log = function(...args) {
+  const message = args.join(' ');
+  if (message.includes('RoamServer:') || 
+      message.includes('Constructor') || 
+      message.includes('run() method') ||
+      message.includes('Attempting to create') ||
+      message.includes('setup complete') ||
+      message.includes('connected')) {
+    // デバッグメッセージは無視（または標準エラーに出力）
+    // console.error(...args);
+    return;
+  }
+  originalConsoleLog.apply(console, args);
+};
+
+// console.info もオーバーライド
+console.info = function(...args) {
+  const message = args.join(' ');
+  if (message.includes('RoamServer:')) {
+    return;
+  }
+  originalConsoleInfo.apply(console, args);
+};
+
+// 元のRoam Research MCPサーバーを実行
+require('C:/Users/HP/AppData/Roaming/npm/node_modules/roam-research-mcp/build/index.js');

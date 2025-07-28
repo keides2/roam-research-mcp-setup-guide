@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "roam-research": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\[username]\\path\\to\\claude_desktop_config_wrapper.json"
+      ]
+    }
+  }
+}
