@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/keides2-roam-research-mcp-setup-guide-badge.png)](https://mseep.ai/app/keides2-roam-research-mcp-setup-guide)
+
 # Roam Research MCP環境構築ガイド（Windows版）
 
 > **📋 このガイドについて**  
