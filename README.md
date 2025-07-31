@@ -1,5 +1,7 @@
 # Roam Research MCP環境構築ガイド（Windows版）
 
+<img src="./img/top.png" alt="Roam Research MCP Setup Guide" width="700">
+
 > **📋 このガイドについて**  
 > このリポジトリは [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp) の Windows環境での Claude Desktop 連携に関する補足ガイドです。
 
@@ -26,7 +28,7 @@
 
 同じノートアプリに分類されている`Notion`と`Claude Desktop`をつなぐ`MCP`サーバーは、`Anthropic`が信頼するパートナーとして標準的に提供されています。
 
-  ![alt text](image-2.png)
+  ![alt text](./img/image-2.png)
 
 が、[Roam Research](https://roamresearch.com/) の`MCP`サーバーは、現時点では`Anthropic`からは提供されていませんので、`GitHub`の[https://github.com/2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp)から入手します。
 
@@ -91,7 +93,7 @@
 
 1. `Roam Research` にログイン
 2. 右上の3点リーダーから設定（⚙️）をクリック
-  ![alt text](image.png)
+  ![alt text](./img/image.png)
 3. 「`Graph`」タブを選択
 4. 「`API tokens`」セクションに移動
 5. 「`+ New API Token`」をクリック
@@ -99,7 +101,7 @@
     - ☑️ **Read+edit**: グラフの読み取り、ページ・ブロックの作成・編集
 7. トークン名を入力
 8. 「`Create token`」をクリック
-  ![alt text](image-1.png)
+  ![alt text](./img/image-1.png)
 9. **⚠️ 重要**: 生成されたトークンをコピーして安全な場所に保存
     - この画面を閉じると再度確認できません
 
@@ -219,7 +221,7 @@ C:\Users\%USERNAME%\AppData\Roaming\npm\node_modules\roam-research-mcp\build\ind
 
 - ROAM_API_TOKEN: あなたのAPIトークン
 - ROAM_GRAPH_NAME: あなたのグラフ名
-- quire()のパス: 実際のユーザー名に変更
+- require()のパス: 実際のユーザー名に変更
 
 詳細な設定内容は `scripts/roam-mcp-wrapper.js.template` を参照してください。
 
