@@ -1,122 +1,124 @@
-# Roam Research MCP環境構築ガイド（Windows版）
+# Roam Research MCP Setup Guide (Windows)
+
+**English | [日本語](README_ja.md)**
 
 <img src="./img/top.png" alt="Roam Research MCP Setup Guide" width="700">
 
-> **📋 このガイドについて**  
-> このリポジトリは [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp) の Windows環境での Claude Desktop 連携に関する補足ガイドです。
+> **📋 About this Guide**  
+> This repository is a supplementary guide for integrating [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp) with Claude Desktop on Windows.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![Windows](https://img.shields.io/badge/OS-Windows%2011-blue.svg)](https://www.microsoft.com/windows/)
 
-## 🚀 クイックスタート
+## 🚀 Quick Start
 
-1. [Roam Research APIトークンを生成](#roam-research側の準備)
-2. [Node.jsをインストール](#nodejs環境の構築)
-3. [MCPサーバーをセットアップ](#mcpサーバーのインストール)
-4. [Claude Desktopを設定](#claude-desktop設定)
-5. [動作確認](#動作確認)
+1. [Generate Roam Research API Token](#roam-research-setup)
+2. [Install Node.js](#nodejs-setup)
+3. [Set up the MCP Server](#mcp-server-installation)
+4. [Configure Claude Desktop](#claude-desktop-setup)
+5. [Verify Operation](#verification)
 
-## 🔧 解決する問題
+## 🔧 Issues This Guide Solves
 
-- ❌ **JSON解析エラー**: `Unexpected token 'R', "RoamServer"... is not valid JSON`
-- ❌ **環境変数エラー**: `Missing required environment variables`  
-- ❌ **ESモジュール問題**: `require()` が使用できない問題
-- ✅ **安定した Claude Desktop 連携の実現**
+- ❌ **JSON Parse Errors**: `Unexpected token 'R', "RoamServer"... is not valid JSON`
+- ❌ **Environment Variable Errors**: `Missing required environment variables`  
+- ❌ **ES Module Issues**: Problems with `require()` usage
+- ✅ **Stable Claude Desktop Integration**
 
-第2の脳と飛ばれるノートアプリ`Roam Research`と`Claude Desktop`を`MCP`（`Model Context Protocol`）で連携させる[Roam Research MCP Server](https://github.com/2b3pro/roam-research-mcp)を補足するガイドです。
+This is a supplementary guide for the [Roam Research MCP Server](https://github.com/2b3pro/roam-research-mcp) that connects the note-taking app `Roam Research` (known as a "second brain") with `Claude Desktop` using `MCP` (Model Context Protocol).
 
-同じノートアプリに分類されている`Notion`と`Claude Desktop`をつなぐ`MCP`サーバーは、`Anthropic`が信頼するパートナーとして標準的に提供されています。
+While `Notion`, another note-taking app, has an MCP server provided by `Anthropic` as a trusted partner standard offering:
 
-  ![alt text](./img/image-2.png)
+![Notion MCP](./img/image-2.png)
 
-が、[Roam Research](https://roamresearch.com/) の`MCP`サーバーは、現時点では`Anthropic`からは提供されていませんので、`GitHub`の[https://github.com/2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp)から入手します。
+The [Roam Research](https://roamresearch.com/) MCP server is not currently provided by `Anthropic`, so we obtain it from GitHub at [https://github.com/2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp).
 
-そして`Installation and Usage`の`Running with Stdio`に従ってインストールするのですが、`Claude Desktop`との連携においていくつかの問題が発生しました。このガイドでは、それらの問題に対応するための具体的な手順を解説しています。
+Following the `Installation and Usage` section's `Running with Stdio` instructions, several issues occurred during Claude Desktop integration. This guide provides specific steps to address these problems.
 
-以下に本ガイドの背景と、`2b3pro/roam-research-mcp` リポジトリの設定・手順との主な違いについて説明します。
+Below, we explain the background of this guide and the main differences from the settings and procedures in the `2b3pro/roam-research-mcp` repository.
 
-## ガイド作成の背景
+## Background of This Guide
 
-この`Roam Research MCP`サーバーは、AIアシスタント`Claude Desktop`が`Roam Research`グラフにアクセスするための標準化されたインターフェースを提供するものです。`README`には、基本的なセットアップ方法や`Docker`での実行方法、そして`Claude Desktop`との連携に関する`MCP`設定の例が示されています。
+This `Roam Research MCP` server provides a standardized interface for the AI assistant `Claude Desktop` to access `Roam Research` graphs. The README shows basic setup methods, Docker execution methods, and MCP configuration examples for Claude Desktop integration.
 
-しかし実際の試行錯誤の結果、**Windows環境**で`Claude Desktop`と連携させる際に、以下の3つの主要な問題が発生することが確認できました。
+However, through actual trial and error, we confirmed that three major issues occur when integrating with `Claude Desktop` in a **Windows environment**:
 
-1.  **JSON解析エラーの発生**: `MCP`サーバーが`Roam Research`の`API`機能へのアクセスを提供する際、標準入出力 (`Stdio`) を用いた通信が可能です。この際、サーバーから出力されるデバッグメッセージ（`RoamServer: ...` で始まるメッセージ）が、`Claude Desktop`が期待する``JSON-RPC``通信に混入し、「`Unexpected token 'R', "RoamServer"... is not valid JSON`」といったJSON解析エラーを引き起こしました。`Claude Desktop`は標準入力から`JSON-RPC`メッセージを受け取ることを待機しているため、`JSON`以外のデータが送られるとエラーとなります。
+1. **JSON Parse Errors**: When the MCP server provides access to Roam Research's API functionality, it can communicate using standard input/output (Stdio). During this process, debug messages output from the server (messages beginning with `RoamServer: ...`) mix into the `JSON-RPC` communication that `Claude Desktop` expects, causing JSON parse errors like "Unexpected token 'R', "RoamServer"... is not valid JSON". Since `Claude Desktop` waits to receive `JSON-RPC` messages from standard input, it errors when non-JSON data is sent.
 
-2.  **環境変数の読み込み問題**: オリジナルの`README`では、`.env` ファイルを使用して環境変数を設定する方法が推奨されており、サーバーは最初に`.env` ファイルからの読み込みを試み、その後に`MCP`設定の環境変数をフォールバックとして使用すると説明されています。しかし、`Claude Desktop`からサーバーを起動する際に、この`.env`ファイルの読み込みが期待通りに機能しないケースがあり、「`Missing required environment variables`」といった環境変数エラーが発生することがありました。
+2. **Environment Variable Loading Issues**: The original README recommends using a `.env` file to set environment variables, explaining that the server first tries to load from the `.env` file, then uses MCP configuration environment variables as a fallback. However, when starting the server from `Claude Desktop`, this `.env` file loading doesn't function as expected, sometimes causing environment variable errors like "Missing required environment variables".
 
-3. **ESモジュール問題**: プロジェクト内に配置したラッパースクリプトで`require()`が使用できない問題。プロジェクトの`package.json`に`"type": "module"`が設定されているため、プロジェクト内の`.js`ファイルが`ES`モジュールとして扱われ、`CommonJS`形式の`require()`が使用できなくなります。
+3. **ES Module Issues**: Problems with using `require()` in wrapper scripts placed within the project. Since the project's `package.json` has `"type": "module"` set, `.js` files within the project are treated as ES modules, making `CommonJS` format `require()` unusable.
 
-これらの問題により、`Roam Research MCP`サーバーの強力な機能 を`Claude Desktop`から安定して利用することが困難であったため、その解決策をまとめるためにこのガイドを作成しました。
+These issues made it difficult to stably utilize the powerful features of the `Roam Research MCP` server from `Claude Desktop`, so this guide was created to summarize solutions.
 
-### オリジナルREADME Installationとの主な違い
+### Main Differences from Original README Installation
 
-このガイドでは、上記の課題を解決するために、オリジナルの`README`に記載されている設定に加えて、以下の重要な変更点と追加手順を導入しています。
+This guide introduces the following important changes and additional steps to solve the above challenges, in addition to the settings described in the original README:
 
-1.  **ラッパースクリプトの導入**
-    *   **オリジナルのアプローチ**: オリジナルの`README`では、直接 `node build/index.js` コマンドを`MCP`サーバーの設定に記述する形で、サーバーを起動する方法が示されています。この方法では、サーバーが出力するデバッグメッセージが直接`Claude Desktop`に送られてしまいます。
-    *   **このガイドでの変更**: デバッグメッセージによる`JSON`解析エラーを回避するため、**ラッパースクリプト**`roam-mcp-wrapper.js`を導入しています。このスクリプトは、`MCP`サーバーからの出力のうち、`RoamServer:` で始まるデバッグメッセージをフィルタリングし、`JSON-RPC`通信のみを標準出力に送信するように機能します。これにより、`Claude Desktop`は予期しない出力に邪魔されることなく、必要な`JSON-RPC`メッセージのみを解析できるようになります。`Claude Desktop`の設定ファイル`claude_desktop_config.json`では、直接サーバーを実行する代わりに、このラッパースクリプトを実行するように設定します。
+1. **Introduction of Wrapper Script**
+   * **Original Approach**: The original README shows a method of directly writing the `node build/index.js` command in the MCP server configuration to start the server. This method sends debug messages output by the server directly to `Claude Desktop`.
+   * **Changes in This Guide**: To avoid JSON parse errors from debug messages, we introduce a **wrapper script** `roam-mcp-wrapper.js`. This script filters debug messages beginning with `RoamServer:` and sends only `JSON-RPC` communication to standard output. This allows `Claude Desktop` to parse only the necessary `JSON-RPC` messages without interference from unexpected output. In the `Claude Desktop` configuration file `claude_desktop_config.json`, instead of executing the server directly, we configure it to execute this wrapper script.
 
-2.  **環境変数の直接設定**
-    *   **オリジナルのアプローチ**: `README`では、開発時において`.env`ファイルの使用が推奨されており、サーバーは`.env`ファイルを優先して環境変数をロードすると述べられています。また、`MCP`設定ファイル内の`env`プロパティでも設定可能です。
-    *   **このガイドでの変更**: `Claude Desktop`との連携において、`.env`ファイルの読み込みが安定しない問題を回避するため、**`ROAM_API_TOKEN`** や **`ROAM_GRAPH_NAME`** などの必須環境変数を、`Claude Desktop`の**設定ファイル `claude_desktop_config.json` 内の `env` プロパティに直接記述する**ことを推奨しています。これにより、サーバー起動時に環境変数が確実に`Claude Desktop`から渡されるようになり、環境変数エラーの発生を防ぎます。
+2. **Direct Environment Variable Setting**
+   * **Original Approach**: The README recommends using `.env` files during development, stating that the server prioritizes loading `.env` files. It can also be configured via the `env` property in MCP configuration files.
+   * **Changes in This Guide**: To avoid the instability of `.env` file loading in Claude Desktop integration, we recommend **directly writing required environment variables** like **`ROAM_API_TOKEN`** and **`ROAM_GRAPH_NAME`** in the **`env` property within the Claude Desktop configuration file `claude_desktop_config.json`**. This ensures environment variables are reliably passed from `Claude Desktop` when starting the server, preventing environment variable errors.
 
-3. **MCP専用ディレクトリの採用**
-   * **オリジナルのアプローチ**: `README`では、プロジェクト内またはシステムの適当な場所にファイルを配置する方法が示されています。この方法では、プロジェクトの`package.json`設定の影響を受ける可能性があります。
-   * **このガイドでの変更**: `ES`モジュール問題を根本的に回避し、複数の`MCP`サーバーを効率的に管理するため、**プロジェクト外の専用ディレクトリ構成**`C:\Users\%USERNAME%\mcp-servers\`を採用しています。この構成により、各`MCP`サーバーが独立して動作し、`package.json`の`"type": "module"`設定の影響を受けることなく、ラッパースクリプトで`require()`を安全に使用できます。また、将来的に他の`MCP`サーバー（`Notion`、`Obsidian`等）を追加する際の拡張性も確保されています。
+3. **Adoption of MCP-Dedicated Directory**
+   * **Original Approach**: The README shows methods of placing files within the project or in appropriate system locations. This method may be affected by the project's `package.json` settings.
+   * **Changes in This Guide**: To fundamentally avoid ES module issues and efficiently manage multiple MCP servers, we adopt a **dedicated directory structure outside the project** `C:\Users\%USERNAME%\mcp-servers\`. This structure allows each MCP server to operate independently without being affected by `package.json` `"type": "module"` settings, enabling safe use of `require()` in wrapper scripts. It also ensures scalability when adding other MCP servers (Notion, Obsidian, etc.) in the future.
 
-これらの変更点、特に**ラッパースクリプトによるデバッグ出力のフィルタリング**と`Claude Desktop`設定での**環境変数の直接設定**が、本ガイドが提供する安定動作の鍵となります。
+These changes, particularly **filtering debug output with wrapper scripts** and **directly setting environment variables** in Claude Desktop configuration, are key to the stable operation provided by this guide.
 
-このガイドは、これらの問題を解決し、`Roam Research MCP`サーバーと`Claude Desktop`が`Windows`環境で安定して連携できるようにするための、実際の試行錯誤から得られた知見をまとめたものです。
+This guide summarizes insights gained from actual trial and error to enable stable cooperation between the `Roam Research MCP` server and `Claude Desktop` in Windows environments.
 
-## 目次
+## Table of Contents
 
-1. [前提条件](#前提条件)
-2. [Roam Research側の準備](#roam-research側の準備)
-3. [Node.js環境の構築](#nodejs環境の構築)
-4. [MCPサーバーのインストール](#mcpサーバーのインストール)
-5. [Claude Desktop設定](#claude-desktop設定)
-6. [動作確認](#動作確認)
+1. [Prerequisites](#prerequisites)
+2. [Roam Research Setup](#roam-research-setup)
+3. [Node.js Setup](#nodejs-setup)
+4. [MCP Server Installation](#mcp-server-installation)
+5. [Claude Desktop Setup](#claude-desktop-setup)
+6. [Verification](#verification)
 
-## 前提条件
+## Prerequisites
 
-- **Roam Research**: アクティブな有料アカウント（`API`アクセス権限必須）
-- **Claude Desktop**: 最新版のインストール
-- **OS**: Windows11
-- **Node.js**: v18.0以上（推奨: v20.0以上）
-- **管理者権限**: インストール時に必要
+- **Roam Research**: Active paid account (API access required)
+- **Claude Desktop**: Latest version installed
+- **OS**: Windows 11
+- **Node.js**: v18.0 or higher (recommended: v20.0 or higher)
+- **Administrator privileges**: Required for installation
 
-## Roam Research側の準備
+## Roam Research Setup
 
-### 1. APIトークンの生成
+### 1. Generate API Token
 
-1. `Roam Research` にログイン
-2. 右上の3点リーダーから設定（⚙️）をクリック
-  ![alt text](./img/image.png)
-3. 「`Graph`」タブを選択
-4. 「`API tokens`」セクションに移動
-5. 「`+ New API Token`」をクリック
-6. 権限を設定：
-    - ☑️ **Read+edit**: グラフの読み取り、ページ・ブロックの作成・編集
-7. トークン名を入力
-8. 「`Create token`」をクリック
-  ![alt text](./img/image-1.png)
-9. **⚠️ 重要**: 生成されたトークンをコピーして安全な場所に保存
-    - この画面を閉じると再度確認できません
+1. Log in to `Roam Research`
+2. Click settings (⚙️) from the three-dot menu in the top right
+   ![Settings](./img/image.png)
+3. Select the "Graph" tab
+4. Navigate to the "API tokens" section
+5. Click "+ New API Token"
+6. Set permissions:
+   - ☑️ **Read+edit**: Read graph, create/edit pages and blocks
+7. Enter a token name
+8. Click "Create token"
+   ![Create Token](./img/image-1.png)
+9. **⚠️ Important**: Copy the generated token and save it in a secure location
+   - You cannot view it again after closing this screen
 
-### 2. グラフ名の確認
+### 2. Confirm Graph Name
 
-1. `Roam Research`のダッシュボードで使用したいグラフを開く
-2. `URL`の`https://roamresearch.com/#/app/[グラフ名]`の部分を確認
+1. Open the graph you want to use in the Roam Research dashboard
+2. Check the `https://roamresearch.com/#/app/[graph-name]` part of the URL
 
-## Node.js環境の構築
+## Node.js Setup
 
-1. [Node.js公式サイト](https://nodejs.org/)から`LTS`版をダウンロード
-2. インストーラーを実行してデフォルト設定でインストール
-3. コマンドプロンプトで確認：
+1. Download the LTS version from the [Node.js official website](https://nodejs.org/)
+2. Run the installer with default settings
+3. Verify in Command Prompt:
 
-### 1. インストール確認
+### 1. Verify Installation
 
 ```cmd
 >node --version
@@ -126,166 +128,166 @@ v22.14.0
 10.9.2
 ```
 
-## MCPサーバーのインストール
+## MCP Server Installation
 
-### MCP専用ディレクトリの作成（推奨）
+### Create Dedicated MCP Directory (Recommended)
 
-複数の`MCP`サーバーを管理するため、専用ディレクトリ構成を採用します。この方法により、各`MCP`サーバーを独立して管理でき、将来的な拡張も容易になります。
+To manage multiple MCP servers, we adopt a dedicated directory structure. This allows independent management of each MCP server and easy future expansion.
 
-#### 1. ディレクトリ構成の作成
+#### 1. Create Directory Structure
 
 ```bash
-# MCP専用のルートディレクトリを作成
+# Create MCP-dedicated root directory
 mkdir C:\Users\%USERNAME%\mcp-servers
 
-# Roam Research専用ディレクトリを作成
+# Create Roam Research-specific directory
 mkdir C:\Users\%USERNAME%\mcp-servers\roam-research
 ```
 
-**推奨ディレクトリ構成:**
+**Recommended Directory Structure:**
 
 ```text
 C:\Users\%USERNAME%\mcp-servers\
 ├── roam-research\
-│   ├── roam-mcp-wrapper.js    # ラッパースクリプト
-│   └── README.md              # 設定メモ（オプション）
-├── notion\                    # 将来の追加用
-├── obsidian\                  # 将来の追加用
-└── shared\                    # 共通ユーティリティ用
+│   ├── roam-mcp-wrapper.js    # Wrapper script
+│   └── README.md              # Configuration notes (optional)
+├── notion\                    # For future additions
+├── obsidian\                  # For future additions
+└── shared\                    # For shared utilities
 ```
 
-#### 2. メリット
+#### 2. Benefits
 
-- ✅ **各MCPサーバーの独立管理**: 設定ファイルとスクリプトの分離
-- ✅ **スケーラビリティ**: 新しい`MCP`サーバーを簡単に追加
-- ✅ **トラブルシューティング**: 問題の切り分けが容易
-- ✅ **ESモジュール問題の回避**: プロジェクト外配置で`CommonJS`利用可能
+- ✅ **Independent management of each MCP server**: Separation of configuration files and scripts
+- ✅ **Scalability**: Easy addition of new MCP servers
+- ✅ **Troubleshooting**: Easy problem isolation
+- ✅ **Avoiding ES module issues**: CommonJS available with external placement
 
-### Roam Research MCPサーバーのセットアップ
+### Roam Research MCP Server Setup
 
-#### 1. ソースからビルド（開発者向け）
+#### 1. Build from Source (For Developers)
 
 ```bash
-# 作業ディレクトリでリポジトリをクローン
+# Clone repository in working directory
 git clone https://github.com/2b3pro/roam-research-mcp.git
 cd roam-research-mcp
 
-# 依存関係をインストール
+# Install dependencies
 npm install
 
-# TypeScriptをビルド（Windowsの場合はcpコマンドがエラーになるので手動コピーが必要）
+# Build TypeScript (manual copy needed on Windows since cp command fails)
 npx tsc
 copy Roam_Markdown_Cheatsheet.md build\Roam_Markdown_Cheatsheet.md
 
-# ビルド確認
+# Verify build
 dir build\index.js
 ```
 
-#### 2. グローバルインストール（推奨）
+#### 2. Global Installation (Recommended)
 
 ```bash
-# NPMからグローバルインストール
+# Install globally from NPM
 npm install -g roam-research-mcp
 
-# インストール場所の確認
+# Check installation location
 where roam-research-mcp
 ```
 
-**注意**: グローバルインストール後、通常は以下の場所にビルドファイルが配置されます：
+**Note**: After global installation, build files are usually placed at:
 
 ```shell
 C:\Users\%USERNAME%\AppData\Roaming\npm\node_modules\roam-research-mcp\build\index.js
 ```
 
-### ラッパースクリプトの作成
+### Create Wrapper Script
 
-#### 1. ESモジュール問題とJSON解析エラーの対策
+#### 1. Addressing ES Module Issues and JSON Parse Errors
 
-直接`MCP`サーバーを実行すると、以下の問題が発生します：
+Running the MCP server directly causes the following problems:
 
-1. **JSON解析エラー**: `RoamServer:`デバッグメッセージが`JSON-RPC`通信を妨害
-2. **環境変数エラー**: `.env`ファイルの読み込みが不安定
+1. **JSON Parse Errors**: `RoamServer:` debug messages interfere with `JSON-RPC` communication
+2. **Environment Variable Errors**: `.env` file loading is unstable
 
-これらを解決するため、ラッパースクリプトを作成します。
+To solve these, we create a wrapper script.
 
-#### 2. ラッパースクリプトの作成
+#### 2. Create Wrapper Script
 
-**テンプレートをコピー**:
-
-   ```bash
-   cp scripts/roam-mcp-wrapper.js.template C:\Users\%USERNAME%\mcp-servers\roam-research\roam-mcp-wrapper.js
-   ```
-
-**環境変数を設定**:
-作成したファイルを編集し、以下の値を実際の値に置き換えてください：
-
-- ROAM_API_TOKEN: あなたのAPIトークン
-- ROAM_GRAPH_NAME: あなたのグラフ名
-- require()のパス: 実際のユーザー名に変更
-
-詳細な設定内容は `scripts/roam-mcp-wrapper.js.template` を参照してください。
-
-### 環境変数の管理について
-
-このガイドでは、環境変数をラッパースクリプト内で直接設定する方法を採用しています。
-
-**直接設定を選ぶ理由:**
-
-- ✅ シンプルで確実な動作
-- ✅ 外部ファイル読み込みエラーの回避
-- ✅ 設定の一元管理
-- ✅  `.env`ファイル読み込み問題の回避
-
-**注意**: 本番環境では`.env`ファイルや`OS`の環境変数を使用することを推奨しますが、`Claude Desktop`環境では直接設定が最も安定しているようです。**ファイル共有時はAPIトークンを必ず削除してください。**
-
-### 重要な設定項目
-
-1. **APIトークンとグラフ名の設定**:
-
-    ```javascript
-    process.env.ROAM_API_TOKEN = "roam-graph-token-StBlb-あなたのトークン";
-    process.env.ROAM_GRAPH_NAME = "あなたのグラフ名";
-    ```
-
-2. **requireパスの確認**:
-   グローバルインストールの場合、通常は以下のパス：
-
-    ```javascript
-    // 注意: 以下のパスは実際のユーザー名に置き換えてください
-    require('C:/Users/[USERNAME]/AppData/Roaming/npm/node_modules/roam-research-mcp/build/index.js');
-    ```
-
-### ラッパースクリプトの動作テスト
+**Copy template**:
 
 ```bash
-# ディレクトリに移動
+cp scripts/roam-mcp-wrapper.js.template C:\Users\%USERNAME%\mcp-servers\roam-research\roam-mcp-wrapper.js
+```
+
+**Set environment variables**:
+Edit the created file and replace the following values with your actual values:
+
+- ROAM_API_TOKEN: Your API token
+- ROAM_GRAPH_NAME: Your graph name
+- require() path: Change to your actual username
+
+For detailed configuration, refer to `scripts/roam-mcp-wrapper.js.template`.
+
+### Environment Variable Management
+
+This guide adopts the method of setting environment variables directly in the wrapper script.
+
+**Reasons for choosing direct setting:**
+
+- ✅ Simple and reliable operation
+- ✅ Avoiding external file loading errors
+- ✅ Centralized configuration management
+- ✅ Avoiding `.env` file loading issues
+
+**Note**: While using `.env` files or OS environment variables is recommended for production environments, direct setting appears most stable in `Claude Desktop` environments. **Always remove API tokens when sharing files.**
+
+### Important Configuration Items
+
+1. **API Token and Graph Name Setting**:
+
+   ```javascript
+   process.env.ROAM_API_TOKEN = "roam-graph-token-StBlb-your-token";
+   process.env.ROAM_GRAPH_NAME = "your-graph-name";
+   ```
+
+2. **Verify require Path**:
+   For global installation, usually the following path:
+
+   ```javascript
+   // Note: Replace with your actual username
+   require('C:/Users/[USERNAME]/AppData/Roaming/npm/node_modules/roam-research-mcp/build/index.js');
+   ```
+
+### Test Wrapper Script Operation
+
+```bash
+# Navigate to directory
 cd C:\Users\%USERNAME%\mcp-servers\roam-research
 
-# ラッパースクリプトのテスト実行
+# Test wrapper script execution
 node roam-mcp-wrapper.js
 ```
 
-**期待される結果**:
+**Expected Results**:
 
-- ✅ エラーメッセージが表示されない
-- ✅ プロセスが待機状態になる（応答なし）
-- ✅ `Ctrl+C`で終了できる
+- ✅ No error messages displayed
+- ✅ Process enters waiting state (no response)
+- ✅ Can exit with `Ctrl+C`
 
-**注意**: 応答がないのは正常な動作です。`MCP`サーバーは`JSON-RPC`通信を待機している状態です。
+**Note**: No response is normal behavior. The MCP server is waiting for `JSON-RPC` communication.
 
-## Claude Desktop設定
+## Claude Desktop Setup
 
-### 1. 設定ファイルの場所
+### 1. Configuration File Location
 
 ```bash
 %APPDATA%\Claude\claude_desktop_config.json
 ```
 
-### 2. 設定ファイルの更新
+### 2. Update Configuration File
 
-`MCP`専用ディレクトリに配置したラッパースクリプトを使用するよう設定します。
+Configure to use the wrapper script placed in the MCP-dedicated directory.
 
-#### 設定例
+#### Configuration Example
 
 ```json
 {
@@ -300,9 +302,9 @@ node roam-mcp-wrapper.js
 }
 ```
 
-#### 既存の設定がある場合
+#### When Existing Configuration Exists
 
-他の`MCP`サーバーと併用する場合の設定例：
+Configuration example when using with other MCP servers:
 
 ```json
 {
@@ -335,9 +337,9 @@ node roam-mcp-wrapper.js
 }
 ```
 
-### 3. 従来の方法との比較
+### 3. Comparison with Traditional Method
 
-#### このガイドでの推奨方法（新）
+#### This Guide's Recommended Method (New)
 
 ```json
 "roam-research": {
@@ -348,14 +350,14 @@ node roam-mcp-wrapper.js
 }
 ```
 
-**メリット**:
+**Benefits**:
 
-- ✅ `JSON`解析エラーの回避
-- ✅ 環境変数の確実な設定
-- ✅ デバッグメッセージのフィルタリング
-- ✅ 複数`MCP`サーバーの管理が容易
+- ✅ Avoiding JSON parse errors
+- ✅ Reliable environment variable setting
+- ✅ Filtering debug messages
+- ✅ Easy management of multiple MCP servers
 
-#### 従来の直接実行方法（非推奨）
+#### Traditional Direct Execution Method (Not Recommended)
 
 ```json
 "roam-research": {
@@ -368,202 +370,202 @@ node roam-mcp-wrapper.js
 }
 ```
 
-**問題点**:
+**Problems**:
 
-- ❌ `JSON`解析エラーが発生
-- ❌ 環境変数の読み込みが不安定
-- ❌ デバッグメッセージが`Claude Desktop`に送信される
+- ❌ JSON parse errors occur
+- ❌ Environment variable loading is unstable
+- ❌ Debug messages sent to `Claude Desktop`
 
-### 4. 設定の検証
+### 4. Configuration Validation
 
-設定ファイルを保存後、以下で構文エラーがないか確認：
+After saving the configuration file, check for syntax errors:
 
 ```bash
-# JSON構文の検証（PowerShellの場合）
+# JSON syntax validation (PowerShell)
 Get-Content "$env:APPDATA\Claude\claude_desktop_config.json" | ConvertFrom-Json
 ```
 
-成功すれば設定ファイルが正しく記述されています。
+If successful, the configuration file is correctly written.
 
-## 動作確認
+## Verification
 
-### 1. ステップバイステップの動作確認
+### 1. Step-by-Step Verification
 
-#### Step 1: ラッパースクリプトの単体テスト
+#### Step 1: Wrapper Script Unit Test
 
 ```bash
-# ディレクトリに移動
+# Navigate to directory
 cd C:\Users\%USERNAME%\mcp-servers\roam-research
 
-# ラッパースクリプトの単体実行
+# Execute wrapper script alone
 node roam-mcp-wrapper.js
 ```
 
-**期待される結果**:
+**Expected Results**:
 
-- ✅ エラーメッセージが表示されない
-- ✅ プロセスが待機状態になる（無応答）
-- ✅ `Ctrl+C`で正常に終了できる
+- ✅ No error messages displayed
+- ✅ Process enters waiting state (no response)
+- ✅ Can exit normally with `Ctrl+C`
 
-**重要**: 無応答は正常な動作です。`MCP`サーバーは`JSON-RPC`通信を待機している状態です。
+**Important**: No response is normal behavior. The MCP server is waiting for `JSON-RPC` communication.
 
-#### Step 2: Claude Desktopの完全再起動
+#### Step 2: Complete Claude Desktop Restart
 
-1. **完全終了**:
+1. **Complete termination**:
 
-    ```bash
-    # タスクマネージャーでClaude関連プロセスを全て終了
-    # または
-    taskkill /f /im "Claude.exe"
-    ```
-
-2. **再起動**: 通常通り`Claude Desktop`を起動
-
-#### Step 3: 接続確認
-
-1. **起動時のエラーチェック**:
-
-- 起動時に`JSON`解析エラーが出ないことを確認
-- 環境変数エラーが出ないことを確認
-
-2. **新しいチャットでの機能テスト**:
-
-   ```
-   Roam Researchに接続できていますか？利用可能な機能を教えてください。
+   ```bash
+   # End all Claude-related processes in Task Manager
+   # Or
+   taskkill /f /im "Claude.exe"
    ```
 
-### 2. 成功の確認方法
+2. **Restart**: Launch `Claude Desktop` normally
 
-#### 視覚的確認
+#### Step 3: Connection Verification
 
-- ✅ **起動許可ダイアログが表示される**
-- ✅ **左サイドバーにMCPサーバー一覧が表示される**
-  - `roam-research` が利用可能なツール数と共に表示される
-  - 例：`roam-research` (18) ← 数字は利用可能なツール数
-- ✅ `Roam Research`の基本操作（検索、作成）ができる
-- ✅ エラーメッセージが表示されない
-- ✅ レスポンスが適切に返ってくる
+1. **Check startup errors**:
 
-#### 機能確認テスト
+- Confirm no JSON parse errors at startup
+- Confirm no environment variable errors
 
-**基本接続テスト**:
+2. **Function test in new chat**:
+
+   ```
+   Are you connected to Roam Research? Please tell me the available functions.
+   ```
+
+### 2. Success Confirmation Methods
+
+#### Visual Confirmation
+
+- ✅ **Startup permission dialog appears**
+- ✅ **MCP server list appears in left sidebar**
+  - `roam-research` displays with number of available tools
+  - Example: `roam-research` (18) ← Number indicates available tool count
+- ✅ Basic Roam Research operations (search, create) work
+- ✅ No error messages displayed
+- ✅ Appropriate responses returned
+
+#### Function Confirmation Tests
+
+**Basic connection test**:
 
 ```prompt
-Roam Researchに接続できていますか？利用可能な機能を教えてください。
+Are you connected to Roam Research? Please tell me the available functions.
 ```
 
-**検索機能テスト**:
+**Search function test**:
 
 ```prompt
-今日作成されたページを教えてください
+Please tell me the pages created today
 ```
 
-**キーワード検索テスト**:
+**Keyword search test**:
 
 ```prompt
-「プロジェクト」というキーワードでページを検索してください
+Please search for pages with the keyword "project"
 ```
 
-### 3. トラブルシューティング
+### 3. Troubleshooting
 
-#### よくある問題と解決方法
+#### Common Problems and Solutions
 
-##### 問題1: JSON解析エラー
+##### Problem 1: JSON Parse Error
 
 ```shell
 Unexpected token 'R', "RoamServer"... is not valid JSON
 ```
 
-**原因**: デバッグメッセージが`JSON-RPC`通信に混入
-**解決策**: ラッパースクリプトが正しく動作していることを確認
+**Cause**: Debug messages mixing into `JSON-RPC` communication
+**Solution**: Confirm wrapper script is working correctly
 
-##### 問題2: 環境変数エラー
+##### Problem 2: Environment Variable Error
 
 ```shell
 Missing required environment variables: ROAM_API_TOKEN, ROAM_GRAPH_NAME
 ```
 
-**原因**: `API`トークンまたはグラフ名が未設定
-**解決策**: ラッパースクリプト内の環境変数を確認・修正
+**Cause**: API token or graph name not set
+**Solution**: Check and fix environment variables in wrapper script
 
-##### 問題3: ファイルが見つからないエラー
+##### Problem 3: File Not Found Error
 
 ```shell
 Cannot find module 'C:/Users/.../roam-research-mcp/build/index.js'
 ```
 
-**原因**: `require`パスが間違っている
-**解決策**: グローバルインストール場所を確認
+**Cause**: Incorrect `require` path
+**Solution**: Check global installation location
 
 ```bash
-# インストール場所の確認
+# Check installation location
 where roam-research-mcp
 npm list -g roam-research-mcp
 ```
 
-#### ログファイルの確認
+#### Log File Verification
 
-**ログファイルの場所**:
+**Log file location**:
 
 ```bash
 %LOCALAPPDATA%\Claude\logs\mcp-server-roam-research.log
 ```
 
-**ログの確認方法**:
+**Log verification method**:
 
 ```bash
-# 最新のログを確認
+# Check latest log
 type "%LOCALAPPDATA%\Claude\logs\mcp-server-roam-research.log"
 
-# エラーのみを抽出
+# Extract errors only
 type "%LOCALAPPDATA%\Claude\logs\mcp-server-roam-research.log" | findstr /i error
 ```
 
-## 解決できた問題まとめ
+## Summary of Resolved Issues
 
-今回のアプローチにより、以下の問題が解決されました：
+With this approach, the following issues have been resolved:
 
-- ✅ **JSON解析エラーの解消**: `Unexpected token 'R', "RoamServer"... is not valid JSON`
-- ✅ **環境変数エラーの解消**: `Missing required environment variables`
-- ✅ **ESモジュール問題の回避**: プロジェクト外配置によりCommonJS利用可能
-- ✅ **デバッグ出力のフィルタリング**: `RoamServer:`メッセージの除去
+- ✅ **Resolution of JSON parse errors**: `Unexpected token 'R', "RoamServer"... is not valid JSON`
+- ✅ **Resolution of environment variable errors**: `Missing required environment variables`
+- ✅ **Avoiding ES module issues**: CommonJS usable with external project placement
+- ✅ **Debug output filtering**: Removal of `RoamServer:` messages
 
-## 解決方法の核心
+## Core of the Solution
 
-1. **ラッパースクリプトによるフィルタリング**: デバッグ出力を`JSON-RPC`通信から分離
-2. **環境変数の直接設定**: `.env`ファイル読み込み問題を回避
-3. **MCP専用ディレクトリ**: プロジェクト外配置で`ES`モジュール問題を回避
+1. **Filtering with wrapper script**: Separating debug output from `JSON-RPC` communication
+2. **Direct environment variable setting**: Avoiding `.env` file loading issues
+3. **MCP-dedicated directory**: Avoiding ES module issues with external project placement
 
-この方法により、`MCP`サーバーの機能を損なうことなく、`Claude Desktop`での安定動作を実現できました。
+With this method, stable operation in `Claude Desktop` is achieved without compromising MCP server functionality.
 
-**成功すれば、Claude DesktopからRoam Researchの強力な機能を活用できるようになります！**
+**With success, you'll be able to utilize Roam Research's powerful features from Claude Desktop!**
 
-## ⚠️ 免責事項
+## ⚠️ Disclaimer
 
-このガイドは [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp) の非公式な補足ガイドです。
+This guide is an unofficial supplementary guide for [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp).
 
-- オリジナルの開発者・メンテナーとは関係ありません
-- Windows環境での実際の試行錯誤に基づく個人的な解決策です
-- 最新情報については必ずオリジナルリポジトリを確認してください
+- Not affiliated with original developers/maintainers
+- Personal solutions based on actual trial and error in Windows environment
+- Always check the original repository for latest information
 
-## 📄 ライセンス
+## 📄 License
 
-このプロジェクトは [MIT License](LICENSE) の下で公開されています。
+This project is published under the [MIT License](LICENSE).
 
-## 🤝 コントリビューション
+## 🤝 Contribution
 
-改善提案やバグ報告は Issues でお知らせください。プルリクエストも歓迎します。
+Please report improvement suggestions or bug reports via Issues. Pull requests are also welcome.
 
-## 🔗 関連リンク
+## 🔗 Related Links
 
-- [オリジナルリポジトリ](https://github.com/2b3pro/roam-research-mcp)
+- [Original Repository](https://github.com/2b3pro/roam-research-mcp)
 - [Claude Desktop](https://claude.ai/desktop)
 - [Roam Research](https://roamresearch.com/)
 - [Model Context Protocol](https://github.com/modelcontextprotocol)
 
 ---
 
-*このガイドは実際の試行錯誤を通じて得られた知見をまとめたものです。最新の情報については、[公式リポジトリ](https://github.com/2b3pro/roam-research-mcp)を確認してください。*
+*This guide summarizes insights gained through actual trial and error. For the latest information, please check the [official repository](https://github.com/2b3pro/roam-research-mcp).*
 
 ---
-2025/07/28 keides2 初版
+2025/07/28 keides2 First Edition
