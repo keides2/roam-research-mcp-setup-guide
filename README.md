@@ -1,8 +1,8 @@
 # Roam Research MCP Setup Guide (Windows)
 
-**English | [日本語](README_ja.md)**
+<img src="./img/top_2.png" alt="Roam Research MCP Setup Guide" width="700">
 
-<img src="./img/top.png" alt="Roam Research MCP Setup Guide" width="700">
+**English | [日本語](README_ja.md)**
 
 > **📋 About this Guide**  
 > This repository is a supplementary guide for integrating [2b3pro/roam-research-mcp](https://github.com/2b3pro/roam-research-mcp) with Claude Desktop on Windows.
